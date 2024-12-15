@@ -1,14 +1,37 @@
-# Overview
-This repository is a private distribution hub for precompiled binaries of my console applications. These tools are created during my personal time on weekends and are intended solely for my own use or for use by authorized collaborators with shared interests.
+# EZ Toolkit Binary Distribution
 
-# Purpose
-- **Centralized Access:** Provides a convenient location to download my tools.
-- **Personal and Collaborative Use:** Designed for my own workflows or for trusted collaborators.
-- **Private Repository:** This is *not* an open-source project, and use is restricted to authorized individuals.
+This repository serves as a private distribution hub for precompiled binaries of my personal console applications. These tools are developed during personal time and are intended for private use by myself and authorized collaborators.
 
-# How to Use
-1. Clone the repository or download the binaries directly.
-2. Place the binaries in your desired location and ensure the necessary environment variables are configured (if applicable).
+## Repository Structure
+- **Releases:** All binaries are distributed through GitHub Releases
+- **Meta Files:** Release metadata is stored in the `meta` directory:
+  - `cmds.csv`: Available commands and their descriptions
+  - `binaries.csv`: Individual binary files with checksums
+  - `packages.csv`: Platform-specific packages with checksums
 
-# Disclaimer
-These programs are developed for personal and collaborative use and may not undergo extensive testing. Unauthorized use is strictly prohibited. I take no responsibility for any damages or losses resulting from bugs or misuse of the binaries.
+## Installation
+1. Visit the [Releases Page](https://github.com/elvinzeng/ez-toolkit-bin/releases)
+2. Download either:
+   - Individual command binaries (`<command>_<os>_<arch>.xz`)
+   - Platform packages (`ez-toolkit-<os>-<arch>-package-*.tar.xz`)
+3. Extract the files:
+   ```bash
+   # For individual commands
+   xz -d <command>_<os>_<arch>.xz
+
+   # For platform packages
+   tar -xf ez-toolkit-<os>-<arch>-package-*.tar.xz
+   ```
+
+## Supported Platforms
+- Linux (amd64, arm64)
+- macOS (amd64, arm64)
+- Windows (amd64, arm64)
+
+## Security & Usage
+- **Private Repository:** This is not an open-source project
+- **Restricted Access:** Usage is limited to authorized individuals
+- **File Verification:** All binaries include SHA256 checksums for verification
+
+## Disclaimer
+These tools are developed for personal use and shared with trusted collaborators. They may not undergo extensive testing. Unauthorized use is strictly prohibited. No warranty is provided, and I take no responsibility for any consequences resulting from their use or misuse.
