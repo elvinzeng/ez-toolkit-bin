@@ -1,0 +1,13 @@
+command,version,filename,os,arch,sha256,build_time
+ezhello,0.0.1,ezhello_darwin_amd64.xz,darwin,amd64,62336d8a6a947eaa88418db8c382a31438245dde5ea4d279518a99c162179929,2024-12-15T02:39:58
+ezhello,0.0.1,ezhello_darwin_arm64.xz,darwin,arm64,0baedcfae2974296291278f7cd58153eceae14f6c95f6fe66aab958137f6c360,2024-12-15T02:39:59
+ezhello,0.0.1,ezhello_linux_amd64.xz,linux,amd64,08ccf9f06aacbe9d3005647be3c9a7b553e7751fb45146edc248761fce949b37,2024-12-15T02:39:56
+ezhello,0.0.1,ezhello_linux_arm64.xz,linux,arm64,e577b921f0b1c58c77a54f58602bb61bf341f0dc261a4a4eb3843ae3c1fb047f,2024-12-15T02:39:57
+ezhello,0.0.1,ezhello_windows_amd64.exe.xz,windows,amd64,95420267b722b2e180fd4452aaa15926a1e7dc4dff269567bdae095476d88cb3,2024-12-15T02:40:00
+ezhello,0.0.1,ezhello_windows_arm64.exe.xz,windows,arm64,855cbc316d3997a0784a4235c36da5244e530362e07180bef23473f1d42ceed6,2024-12-15T02:40:01
+ezt,0.0.1,ezt_darwin_amd64.xz,darwin,amd64,3691b455f54e9fd409b7333bde81e0db691b644f264306384e0b84deeb12bd0f,2024-12-15T02:40:02
+ezt,0.0.1,ezt_darwin_arm64.xz,darwin,arm64,30446546093bef29ee2563ec6971a88d4289d52c21184deaadfaadad243e578d,2024-12-15T02:40:03
+ezt,0.0.1,ezt_linux_amd64.xz,linux,amd64,71c43c6b3b2f219ba946700c175f18cdcb24e63f4cf97c6bb2b5056af980ec71,2024-12-15T02:40:01
+ezt,0.0.1,ezt_linux_arm64.xz,linux,arm64,d37701beb590ee182f391fb30dedc3ce1e1f3a59612a74f7db2afcbd8114764c,2024-12-15T02:40:02
+ezt,0.0.1,ezt_windows_amd64.exe.xz,windows,amd64,dc3b08f601fc5d52d76743a0d36b93b8050a79933815b7f408b8bd819d58c32f,2024-12-15T02:40:03
+ezt,0.0.1,ezt_windows_arm64.exe.xz,windows,arm64,652bbc582147cd9be1e4d3b3152dfbc5f1a9548aa3e2b1d103b6b3162cfce113,2024-12-15T02:40:04
