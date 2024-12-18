@@ -23,6 +23,13 @@ This repository serves as a private distribution hub for precompiled binaries of
    tar -xf ez-toolkit-<os>-<arch>-package-*.tar.xz
    ```
 
+## Documentation
+For usage instructions and available options, please use the built-in help command:
+```bash
+<command> -h
+# For example: ezt -h
+```
+
 ## Supported Platforms
 - Linux (amd64, arm64)
 - macOS (amd64, arm64)
