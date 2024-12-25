@@ -11,15 +11,9 @@ This repository serves as a private distribution hub for precompiled binaries of
 
 ## Installation
 1. Visit the [Releases Page](https://github.com/elvinzeng/ez-toolkit-bin/releases)
-2. Download either:
-   - Individual command binaries (`<command>_<os>_<arch>.xz`)
-   - Platform packages (`ez-toolkit-<os>-<arch>-package-*.tar.xz`)
-3. Extract the files:
+2. Download platform package for your system: `ez-toolkit-<os>-<arch>-package-*.tar.xz`
+3. Extract the package:
    ```bash
-   # For individual commands
-   xz -d <command>_<os>_<arch>.xz
-
-   # For platform packages
    tar -xf ez-toolkit-<os>-<arch>-package-*.tar.xz
    ```
 
