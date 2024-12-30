@@ -1,3 +1,5 @@
 command,description
 ezt,"ezt is a command-line interface for managing Elvin Zeng's toolkit."
+ezlog,"A tool for viewing and managing logs of ez toolkit applications."
+ezlabgo,"ezlabgo is a CLI tool for managing Go projects and generating code."
 ezhello,ezhello is a simple hello world program as a demo of ez toolkit.
