@@ -18,7 +18,7 @@ This repository serves as a private distribution hub for precompiled binaries of
 Set `EZTOOLKIT_ROOT` and add it to `PATH` first:
 
 ```bash
-export EZTOOLKIT_ROOT=~/.eztoolkit
+export EZTOOLKIT_ROOT="$HOME/.eztoolkit"
 export PATH="$EZTOOLKIT_ROOT/bin:$PATH"
 ```
 

@@ -9,7 +9,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/elvinzeng/ez-toolkit-bin/master/install.sh | bash
 #
 # Prerequisites:
-#   - EZTOOLKIT_ROOT environment variable must be set (e.g. ~/.eztoolkit)
+#   - EZTOOLKIT_ROOT environment variable must be set (e.g. $HOME/.eztoolkit)
 #   - $EZTOOLKIT_ROOT/bin must be in PATH
 #   - curl, tar, xz must be available
 
@@ -30,7 +30,11 @@ info() {
 
 # --- Pre-flight checks ---
 
-[ -n "${EZTOOLKIT_ROOT:-}" ] || die "EZTOOLKIT_ROOT is not set. Please set it first (e.g. export EZTOOLKIT_ROOT=~/.eztoolkit)."
+[ -n "${EZTOOLKIT_ROOT:-}" ] || die "EZTOOLKIT_ROOT is not set. Please set it first (e.g. export EZTOOLKIT_ROOT=\"\$HOME/.eztoolkit\")."
+
+case "$EZTOOLKIT_ROOT" in
+    ~*) die "EZTOOLKIT_ROOT contains a literal '~' ($EZTOOLKIT_ROOT). Use \$HOME instead (e.g. export EZTOOLKIT_ROOT=\"\$HOME/.eztoolkit\")." ;;
+esac
 
 for cmd in curl tar xz; do
     command -v "$cmd" >/dev/null 2>&1 || die "'$cmd' is required but not found. Please install it first."
@@ -137,7 +141,7 @@ info "Bootstrap complete!"
 echo ""
 echo "Make sure these lines are in your shell profile (~/.bashrc or ~/.zshrc):"
 echo ""
-echo "  export EZTOOLKIT_ROOT=${EZTOOLKIT_ROOT}"
+echo "  export EZTOOLKIT_ROOT=\"\$HOME/.eztoolkit\""
 echo "  export PATH=\"\$EZTOOLKIT_ROOT/bin:\$PATH\""
 echo ""
 echo "Then run 'ezt' to verify the installation."
