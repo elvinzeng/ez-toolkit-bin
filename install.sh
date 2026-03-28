@@ -36,6 +36,11 @@ case "$EZTOOLKIT_ROOT" in
     ~*) die "EZTOOLKIT_ROOT contains a literal '~' ($EZTOOLKIT_ROOT). Use \$HOME instead (e.g. export EZTOOLKIT_ROOT=\"\$HOME/.eztoolkit\")." ;;
 esac
 
+case ":$PATH:" in
+    *":${EZTOOLKIT_ROOT}/bin:"*) ;;
+    *) die "\$EZTOOLKIT_ROOT/bin is not in PATH. Please add it first (e.g. export PATH=\"\$EZTOOLKIT_ROOT/bin:\$PATH\")." ;;
+esac
+
 for cmd in curl tar xz; do
     command -v "$cmd" >/dev/null 2>&1 || die "'$cmd' is required but not found. Please install it first."
 done
