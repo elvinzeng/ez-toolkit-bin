@@ -12,6 +12,28 @@ This repository serves as a private distribution hub for precompiled binaries of
 - **Public Key:** `ezcrypt_public.pem` at the repository root
 
 ## Installation
+
+### Quick Install (Recommended)
+
+Set `EZTOOLKIT_ROOT` and add it to `PATH` first:
+
+```bash
+export EZTOOLKIT_ROOT=~/.eztoolkit
+export PATH="$EZTOOLKIT_ROOT/bin:$PATH"
+```
+
+Then run the bootstrap script:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/elvinzeng/ez-toolkit-bin/master/install.sh | bash
+```
+
+This will automatically detect your platform, download the latest release package, and install all commands to `$EZTOOLKIT_ROOT/bin/`.
+
+Don't forget to add the `export` lines above to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.) to make them persistent.
+
+### Manual Install
+
 1. Visit the [Releases Page](https://github.com/elvinzeng/ez-toolkit-bin/releases)
 2. Download platform package for your system: `ez-toolkit-<os>-<arch>-package-*.tar.xz`
 3. Extract the package:
