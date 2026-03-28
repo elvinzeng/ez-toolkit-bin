@@ -99,6 +99,19 @@ shasum -a 256 <filename>
 # Compare the output with the value in binaries.csv or packages.csv
 ```
 
+### Limitations
+
+The public key (`ezcrypt_public.pem`) and signature file (`signatures.json`) are hosted in this same repository alongside the packages they protect. There is no independent trust root — if this repository is fully compromised (e.g. via account takeover), an attacker could replace packages, signatures, and the public key together, rendering signature verification ineffective.
+
+What signature verification **does** protect against:
+- Data corruption during download
+- Partial repository compromise (attacker can modify packages but not signatures/key)
+
+What it **does not** protect against:
+- Full repository takeover (key and packages share the same trust domain)
+
+The actual trust foundation is GitHub account security and HTTPS transport protection.
+
 ### Key Rotation
 
 If the signing key is ever rotated, the new public key will be committed to this repository. The latest `ezcrypt_public.pem` in this repository is always the authoritative key for verifying current releases.
