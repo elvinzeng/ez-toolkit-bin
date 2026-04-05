@@ -1,4 +1,4 @@
 command,description
 ezt,"ezt is a command-line interface for managing Elvin Zeng's toolkit."
 ezlog,"A tool for viewing and managing logs of ez toolkit applications."
-ezcrypt,"ezcrypt provides symmetric (AES-256-GCM) and asymmetric (ECC/ECIES/ECDSA)"
+ezcrypt,"ezcrypt provides symmetric (AES-256-GCM + Argon2id) and asymmetric"
