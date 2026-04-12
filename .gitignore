@@ -14,5 +14,6 @@
 *~
 /dist/
 .DS_Store
-.eztoolkit-bin
+# .eztoolkit-bin is a TRACKED marker file (not ignored) — used by
+# scripts/release publish to verify the target dir is the real repo.
 .claude/settings.local.json
