@@ -1,152 +1,345 @@
-#!/bin/bash
+#!/bin/sh
+# install.sh — bootstrap installer for Elvin Zeng's ez-toolkit CLI toolkit.
 #
-# EZ Toolkit Bootstrap Script
+# Trust model (two-phase; see design spec §13):
+#   Phase 1: HTTPS + SHA256. The integrity chain is anchored in
+#            meta/bootstrap-index.sh (which carries per-platform package
+#            SHA256s) fetched over HTTPS from GitHub.
+#   Phase 2: Once ezcrypt has been extracted from the package, use it to
+#            cryptographically verify the release manifest and every
+#            installed binary against ezcrypt_public.pem (the trust root
+#            also downloaded in Phase 1). ezt's hardcoded public key is
+#            the final backstop on any subsequent run.
 #
-# One-click install: downloads the latest platform package from GitHub Release,
-# extracts all commands, and installs them to $EZTOOLKIT_ROOT/bin/.
+# POSIX sh strict: no bashisms. Verified with `shellcheck -s sh` and `dash -n`.
+#   - `[ ]` not `[[ ]]`
+#   - `printf` not `echo -e`
+#   - `.` (dot) not `source`
+#   - no arrays, no `local`, no `<()`, no `${var,,}`, no `=~`, no brace expansion
+#   - `command -v` not `which`
+set -e
+
+EZTOOLKIT_ROOT="${EZTOOLKIT_ROOT:-$HOME/.eztoolkit}"
+REPO_RAW="https://raw.githubusercontent.com/elvinzeng/ez-toolkit-bin/master"
+GH_API="https://api.github.com/repos/elvinzeng/ez-toolkit-bin"
+
+# Create directories individually (POSIX sh has no brace expansion).
+mkdir -p "$EZTOOLKIT_ROOT/bin"
+mkdir -p "$EZTOOLKIT_ROOT/conf"
+mkdir -p "$EZTOOLKIT_ROOT/cache/ezt"
+mkdir -p "$EZTOOLKIT_ROOT/logs/ezt"
+
+# All temp state is created via mktemp for two reasons:
+#   1. `$$` makes filenames predictable (PID), which opens a /tmp symlink
+#      attack window: an attacker can pre-plant a symlink at
+#      /tmp/foo.<predicted-pid> pointing at any writable file, and curl -o
+#      would then overwrite it. mktemp creates an unpredictable path
+#      atomically with mode 600.
+#   2. We need a staging directory for tar extraction — see Phase 1 step 6.
 #
-# Usage:
-#   curl -fsSL https://raw.githubusercontent.com/elvinzeng/ez-toolkit-bin/master/install.sh | bash
-#
-# Prerequisites:
-#   - EZTOOLKIT_ROOT environment variable must be set (e.g. $HOME/.eztoolkit)
-#   - $EZTOOLKIT_ROOT/bin must be in PATH
-#   - curl, tar, xz must be available
+# TMPDIR honored (Android/Termux, sandbox environments, etc.).
+: "${TMPDIR:=/tmp}"
+export TMPDIR
 
-set -euo pipefail
+BOOTSTRAP_INDEX=""
+PKG_TMP=""
+STAGE_DIR=""
 
-REPO="elvinzeng/ez-toolkit-bin"
+cleanup() {
+    [ -n "$BOOTSTRAP_INDEX" ] && rm -f "$BOOTSTRAP_INDEX"
+    [ -n "$PKG_TMP" ] && rm -f "$PKG_TMP"
+    [ -n "$STAGE_DIR" ] && rm -rf "$STAGE_DIR"
+    return 0
+}
+trap cleanup EXIT INT TERM
 
-# --- Helpers ---
-
-die() {
-    echo "Error: $*" >&2
+BOOTSTRAP_INDEX=$(mktemp -t ez-toolkit-bootstrap-index.XXXXXXXXXX) || {
+    printf 'Failed to create temp file for bootstrap index\n' >&2
+    exit 1
+}
+PKG_TMP=$(mktemp -t ez-toolkit-pkg.XXXXXXXXXX) || {
+    printf 'Failed to create temp file for package\n' >&2
+    exit 1
+}
+STAGE_DIR=$(mktemp -d -t ez-toolkit-stage.XXXXXXXXXX) || {
+    printf 'Failed to create staging directory\n' >&2
     exit 1
 }
 
-info() {
-    echo "==> $*"
-}
+# -----------------------------------------------------------------------------
+# Phase 1: HTTPS + SHA256
+# -----------------------------------------------------------------------------
 
-# --- Pre-flight checks ---
-
-[ -n "${EZTOOLKIT_ROOT:-}" ] || die "EZTOOLKIT_ROOT is not set. Please set it first (e.g. export EZTOOLKIT_ROOT=\"\$HOME/.eztoolkit\")."
-
-case "$EZTOOLKIT_ROOT" in
-    ~*) die "EZTOOLKIT_ROOT contains a literal '~' ($EZTOOLKIT_ROOT). Use \$HOME instead (e.g. export EZTOOLKIT_ROOT=\"\$HOME/.eztoolkit\")." ;;
+# 1. Detect platform.
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+case "$(uname -m)" in
+    x86_64|amd64) ARCH=amd64 ;;
+    aarch64|arm64) ARCH=arm64 ;;
+    *) printf 'Unsupported architecture: %s\n' "$(uname -m)" >&2; exit 1 ;;
 esac
 
-case ":$PATH:" in
-    *":${EZTOOLKIT_ROOT}/bin:"*) ;;
-    *) die "\$EZTOOLKIT_ROOT/bin is not in PATH. Please add it first (e.g. export PATH=\"\$EZTOOLKIT_ROOT/bin:\$PATH\")." ;;
+# 2. Download bootstrap-index.sh (HTTPS trust) and source it with dot.
+#    The index declares PKG_<os>_<arch> and SHA_<os>_<arch> shell variables.
+#
+#    Note: bootstrap-index.sh is NOT explicitly verified via its .ezg
+#    signature in Phase 2. This is intentional: the signed
+#    release-manifest.toml covers the same per-platform (filename, sha256)
+#    data, so any tampering that replaces bootstrap-index.sh to point at
+#    attacker-controlled bytes is caught transitively when Phase 2
+#    verifies the manifest against ezcrypt_public.pem. ezt's hardcoded
+#    public key on any subsequent run is the ultimate backstop.
+curl -fsSL "$REPO_RAW/meta/bootstrap-index.sh" -o "$BOOTSTRAP_INDEX"
+# shellcheck disable=SC1090  # file is downloaded at runtime; path is not static
+. "$BOOTSTRAP_INDEX"
+
+# 3. Resolve package name and SHA for this platform.
+#    Explicit `case` lookup (no `eval`) keeps the trust boundary obvious:
+#    only the platforms listed below reach the download stage. When a new
+#    platform ships, both bootstrap-index.sh AND this case must be updated.
+case "$OS/$ARCH" in
+    linux/amd64)
+        PKG_NAME="$PKG_linux_amd64"
+        PKG_SHA="$SHA_linux_amd64"
+        ;;
+    linux/arm64)
+        PKG_NAME="$PKG_linux_arm64"
+        PKG_SHA="$SHA_linux_arm64"
+        ;;
+    darwin/amd64)
+        PKG_NAME="$PKG_darwin_amd64"
+        PKG_SHA="$SHA_darwin_amd64"
+        ;;
+    darwin/arm64)
+        PKG_NAME="$PKG_darwin_arm64"
+        PKG_SHA="$SHA_darwin_arm64"
+        ;;
+    windows/amd64)
+        PKG_NAME="$PKG_windows_amd64"
+        PKG_SHA="$SHA_windows_amd64"
+        ;;
+    windows/arm64)
+        PKG_NAME="$PKG_windows_arm64"
+        PKG_SHA="$SHA_windows_arm64"
+        ;;
+    *)
+        printf 'Unsupported platform: %s/%s\n' "$OS" "$ARCH" >&2
+        exit 1
+        ;;
 esac
 
-for cmd in curl tar xz; do
-    command -v "$cmd" >/dev/null 2>&1 || die "'$cmd' is required but not found. Please install it first."
-done
+if [ -z "$PKG_NAME" ] || [ -z "$PKG_SHA" ]; then
+    printf 'No package available for %s/%s in this release\n' "$OS" "$ARCH" >&2
+    exit 1
+fi
 
-# --- Detect platform ---
+# 4. Download the package asset from the latest GitHub Release.
+RELEASE_JSON=$(curl -fsSL "$GH_API/releases/latest")
+ASSET_URL=$(printf '%s' "$RELEASE_JSON" | grep -o "https://[^\"]*${PKG_NAME}" | head -1)
+if [ -z "$ASSET_URL" ]; then
+    printf 'Could not locate asset URL for %s in latest release\n' "$PKG_NAME" >&2
+    exit 1
+fi
+curl -fsSL "$ASSET_URL" -o "$PKG_TMP"
 
-detect_os() {
-    case "$(uname -s)" in
-        Linux*)  echo "linux" ;;
-        Darwin*) echo "darwin" ;;
-        MINGW*|MSYS*|CYGWIN*) echo "windows" ;;
-        *) die "Unsupported OS: $(uname -s)" ;;
-    esac
+# 5. SHA256 check (integrity only; authenticity comes in Phase 2).
+#    sha256sum is GNU; shasum is BSD/macOS. Accept either.
+if command -v sha256sum >/dev/null 2>&1; then
+    ACTUAL=$(sha256sum "$PKG_TMP" | cut -d' ' -f1)
+elif command -v shasum >/dev/null 2>&1; then
+    ACTUAL=$(shasum -a 256 "$PKG_TMP" | cut -d' ' -f1)
+else
+    printf 'Neither sha256sum nor shasum is available on this system\n' >&2
+    exit 1
+fi
+if [ "$ACTUAL" != "$PKG_SHA" ]; then
+    printf 'SHA256 mismatch for %s\n' "$PKG_NAME" >&2
+    printf '  expected: %s\n' "$PKG_SHA" >&2
+    printf '  actual:   %s\n' "$ACTUAL" >&2
+    exit 1
+fi
+
+# 6. Extract the package into a staging directory (NOT directly into
+#    $EZTOOLKIT_ROOT/bin). Staging lets Phase 2 verify signatures before
+#    any bytes reach the user's PATH. Because the tar archive is still
+#    cryptographically unauthenticated at this point (its SHA256 is
+#    sourced from bootstrap-index.sh, which itself is not yet verified),
+#    we MUST defend against malicious archive contents before running
+#    the extraction that moves them to disk.
+#
+#    Defense is three-part:
+#      (a) Pre-list tar entries and reject absolute paths, `..` traversal,
+#          and any entry whose name contains a newline or embedded NUL
+#          (which would confuse subsequent POSIX sh loops).
+#      (b) Extract to staging and then walk the staging tree with `find`,
+#          aborting if any entry is a symlink, hardlink, device node,
+#          socket, or fifo. Only regular files and directories are
+#          allowed to reach Phase 2.
+#      (c) Phase 2 verifies signatures, and only files with a `.ezg`
+#          sibling are promoted to bin/ — MANIFEST and any other non-
+#          binary filler is discarded.
+#
+#    tar -J (xz) is not in POSIX tar but is supported by GNU tar, BSD tar,
+#    and busybox tar when compiled with xz. Falling back to a two-step
+#    `xz -d` + `tar -xf` would complicate error handling, so we require it.
+
+# Pre-check 1: entry types. Use long-form `tar -tv` and reject any entry
+# whose first column (the type char) is not `-` (regular file) or `d`
+# (directory). This rejects symlinks (l), hardlinks (h), device nodes
+# (b/c), fifos (p), sockets (s). Rejection happens BEFORE extraction so
+# that a malicious archive cannot create a symlink and then a same-named
+# regular file that writes through the symlink to an attacker-chosen
+# path. The `-tv` output format is consistent across GNU tar, BSD tar,
+# and busybox tar at the first-column level.
+tar_long=$(tar -tvJf "$PKG_TMP") || {
+    printf 'Failed to list archive contents (long form)\n' >&2
+    exit 1
 }
-
-detect_arch() {
-    case "$(uname -m)" in
-        x86_64|amd64)  echo "amd64" ;;
-        aarch64|arm64) echo "arm64" ;;
-        *) die "Unsupported architecture: $(uname -m)" ;;
+printf '%s\n' "$tar_long" | while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    type_char=$(printf '%s' "$line" | cut -c1)
+    case "$type_char" in
+        -|d) ;;
+        *)
+            printf 'Rejecting non-regular tar entry (type=%s): %s\n' \
+                "$type_char" "$line" >&2
+            exit 1 ;;
     esac
+done || exit 1
+
+# Pre-check 2: entry paths. Use short-form `tar -t` (paths only, no
+# link-target noise to parse) and reject absolute paths, `..` traversal,
+# and names containing tabs (which would confuse subsequent POSIX sh
+# loops that build positional-parameter argv for ezcrypt). Newlines in
+# filenames are implicitly rejected because `read -r` reads one line,
+# and any second line would be re-fed through the same case check and
+# fail one of the other patterns. Patterns:
+#   /*        absolute path
+#   ../*      starts with parent traversal
+#   ..        entry is literally ".."
+#   */..      ends with "/.."
+#   */../*    contains "/../" anywhere
+tar_paths=$(tar -tJf "$PKG_TMP") || {
+    printf 'Failed to list archive contents (short form)\n' >&2
+    exit 1
 }
+printf '%s\n' "$tar_paths" | while IFS= read -r entry; do
+    case "$entry" in
+        '')                                continue ;;
+        /*|../*|..|*/..|*/../*|*'	'*)
+            printf 'Rejecting dangerous tar entry: %s\n' "$entry" >&2
+            exit 1 ;;
+    esac
+done || exit 1
 
-OS=$(detect_os)
-ARCH=$(detect_arch)
+# Pre-checks passed — safe to extract.
+tar -xJf "$PKG_TMP" -C "$STAGE_DIR"
 
-info "Detected platform: ${OS}/${ARCH}"
+# Belt-and-braces: scan the extracted tree for anything that isn't a
+# regular file or directory. This is redundant with the pre-check above
+# (which used `-tv` long form), but the cost is negligible and it
+# catches any drift between `tar -tv` output format and actual tar
+# extraction behavior on exotic inputs.
+nonregular=$(find "$STAGE_DIR" \
+    \( -type l -o -type b -o -type c -o -type p -o -type s \) -print 2>/dev/null)
+if [ -n "$nonregular" ]; then
+    printf 'Extracted tree contains non-regular-file entries, aborting:\n%s\n' \
+        "$nonregular" >&2
+    exit 1
+fi
 
-# --- Create directories ---
+# 7. Download the public key and the signed artifacts used in Phase 2.
+curl -fsSL "$REPO_RAW/ezcrypt_public.pem" \
+    -o "$EZTOOLKIT_ROOT/conf/ezcrypt_public.pem"
+curl -fsSL "$REPO_RAW/meta/release-manifest.toml" \
+    -o "$EZTOOLKIT_ROOT/cache/ezt/release-manifest.toml"
+curl -fsSL "$REPO_RAW/meta/release-manifest.toml.ezg" \
+    -o "$EZTOOLKIT_ROOT/cache/ezt/release-manifest.toml.ezg"
+curl -fsSL "$REPO_RAW/meta/bootstrap-index.sh.ezg" \
+    -o "$EZTOOLKIT_ROOT/cache/ezt/bootstrap-index.sh.ezg"
 
-DIRS=(bin conf logs data cache/ezt temp)
-for d in "${DIRS[@]}"; do
-    mkdir -p "${EZTOOLKIT_ROOT}/${d}"
+# -----------------------------------------------------------------------------
+# Phase 2: ezcrypt verification (against the staged binaries)
+# -----------------------------------------------------------------------------
+
+EZCRYPT="$STAGE_DIR/ezcrypt"
+PUB="$EZTOOLKIT_ROOT/conf/ezcrypt_public.pem"
+MANIFEST="$EZTOOLKIT_ROOT/cache/ezt/release-manifest.toml"
+MANIFEST_SIG="$EZTOOLKIT_ROOT/cache/ezt/release-manifest.toml.ezg"
+
+if [ ! -x "$EZCRYPT" ]; then
+    printf 'WARNING: ezcrypt was not present in the staged package\n' >&2
+    printf '  Bootstrap aborted: integrity cannot be cryptographically verified.\n' >&2
+    exit 2
+fi
+
+# 8. Verify the release manifest signature.
+if ! "$EZCRYPT" verify -k "$PUB" -i "$MANIFEST" -s "$MANIFEST_SIG" >/dev/null 2>&1; then
+    printf 'WARNING: manifest signature verification FAILED\n' >&2
+    printf '  Bootstrap aborted: integrity could not be cryptographically verified.\n' >&2
+    printf '  Investigate before retrying.\n' >&2
+    exit 2
+fi
+printf 'OK manifest signature verified\n'
+
+# 9. Batch-verify every staged binary in a single ezcrypt invocation.
+#    install.sh only reports pass/fail; for per-file details run `ezt verify`.
+#
+#    Filenames come from the UNAUTHENTICATED archive, so we must accumulate
+#    them into POSIX positional parameters ("$@") instead of a space-
+#    separated string. String-based concatenation + word splitting would
+#    break on any filename containing whitespace, and would also silently
+#    reinterpret a filename like `-rm` as an ezcrypt flag. Positional
+#    parameter accumulation preserves one filename per argv slot and
+#    passes it through to ezcrypt verbatim.
+set --
+for bin in "$STAGE_DIR"/*; do
+    case "$bin" in
+        *.ezg) continue ;;
+    esac
+    [ -f "$bin" ] || continue
+    [ -f "${bin}.ezg" ] || continue
+    set -- "$@" -i "$bin"
 done
 
-info "Directories created under ${EZTOOLKIT_ROOT}"
+if [ "$#" -eq 0 ]; then
+    printf 'WARNING: no binaries with .ezg sibling found in package, aborting\n' >&2
+    exit 3
+fi
 
-# --- Find latest release and matching package ---
+if ! "$EZCRYPT" verify -k "$PUB" "$@" -s "$STAGE_DIR" >/dev/null 2>&1; then
+    printf 'WARNING: one or more binary signatures FAILED\n' >&2
+    printf '  Bootstrap aborted: the staged binaries were NOT installed.\n' >&2
+    exit 3
+fi
+printf 'OK all binary signatures verified\n'
 
-info "Fetching latest release info from GitHub..."
-
-RELEASE_JSON=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest")
-
-# Find the package asset for current platform
-PACKAGE_NAME=$(echo "$RELEASE_JSON" | grep -o "\"ez-toolkit-${OS}-${ARCH}-package-[^\"]*\.tar\.xz\"" | tr -d '"')
-[ -n "$PACKAGE_NAME" ] || die "No package found for ${OS}/${ARCH} in the latest release."
-
-DOWNLOAD_URL=$(echo "$RELEASE_JSON" | grep -o "\"https://[^\"]*/${PACKAGE_NAME}\"" | tr -d '"')
-[ -n "$DOWNLOAD_URL" ] || die "Failed to extract download URL for ${PACKAGE_NAME}."
-
-# --- Download package to cache ---
-
-CACHE_DIR="${EZTOOLKIT_ROOT}/cache/ezt"
-PACKAGE_PATH="${CACHE_DIR}/${PACKAGE_NAME}"
-
-info "Downloading ${PACKAGE_NAME}..."
-curl -fSL --progress-bar -o "$PACKAGE_PATH" "$DOWNLOAD_URL"
-
-# --- Extract and install ---
-
-EXTRACT_DIR="${EZTOOLKIT_ROOT}/temp/bootstrap_extract"
-rm -rf "$EXTRACT_DIR"
-mkdir -p "$EXTRACT_DIR"
-
-info "Extracting package..."
-tar -xf "$PACKAGE_PATH" -C "$EXTRACT_DIR"
-
-# Binary files in the package are named: {cmd}_{os}_{arch}[.exe]
-# Install them to $EZTOOLKIT_ROOT/bin/{cmd}[.exe]
-INSTALLED=0
-for file in "${EXTRACT_DIR}"/*; do
-    [ -f "$file" ] || continue
-    basename=$(basename "$file")
-
-    # Strip _{os}_{arch} suffix to get the command name
-    if [ "$OS" = "windows" ]; then
-        cmd_name=$(echo "$basename" | sed "s/_${OS}_${ARCH}\.exe$/.exe/")
-    else
-        cmd_name=$(echo "$basename" | sed "s/_${OS}_${ARCH}$//")
-    fi
-
-    cp "$file" "${EZTOOLKIT_ROOT}/bin/${cmd_name}"
-    chmod +x "${EZTOOLKIT_ROOT}/bin/${cmd_name}"
-    INSTALLED=$((INSTALLED + 1))
+# 10. All Phase 2 checks passed — promote ONLY the verified binary + .ezg
+#     pairs to $EZTOOLKIT_ROOT/bin. We iterate the same "$@" we built for
+#     verify, stepping two args at a time (-i <path>), so the move set is
+#     exactly the set of files that cleared signature verification.
+#
+#     Anything else in the stage directory (MANIFEST, future manifest
+#     companions, whatever else a package may carry for offline self-
+#     check) is left behind and swept up by the cleanup trap. Per spec
+#     §11, the in-package MANIFEST file is metadata only; only binaries
+#     and their signatures belong in bin/.
+while [ "$#" -gt 0 ]; do
+    # "$1" is "-i", "$2" is the staged binary path.
+    shift
+    src="$1"
+    shift
+    name=$(basename "$src")
+    mv -f "$src" "$EZTOOLKIT_ROOT/bin/$name"
+    mv -f "${src}.ezg" "$EZTOOLKIT_ROOT/bin/${name}.ezg"
 done
 
-rm -rf "$EXTRACT_DIR"
+# 11. Cleanup (belt-and-braces: the EXIT trap also handles this path, but
+#     running it here keeps the final message uncluttered).
+cleanup
+BOOTSTRAP_INDEX=""
+PKG_TMP=""
+STAGE_DIR=""
 
-info "Installed ${INSTALLED} command(s) to ${EZTOOLKIT_ROOT}/bin/"
-
-# --- Download metadata files to cache ---
-
-TAG=$(echo "$RELEASE_JSON" | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"//;s/"//')
-
-for meta_file in signatures.json ezcrypt_public.pem; do
-    META_URL="https://github.com/${REPO}/releases/download/${TAG}/${meta_file}"
-    curl -fsSL -o "${CACHE_DIR}/${meta_file}" "$META_URL" 2>/dev/null || true
-done
-
-# --- Done ---
-
-info "Bootstrap complete!"
-echo ""
-echo "Make sure these lines are in your shell profile (~/.bashrc or ~/.zshrc):"
-echo ""
-echo "  export EZTOOLKIT_ROOT=\"\$HOME/.eztoolkit\""
-echo "  export PATH=\"\$EZTOOLKIT_ROOT/bin:\$PATH\""
-echo ""
-echo "Then run 'ezt' to verify the installation."
+printf '\n'
+printf 'Bootstrap complete. Add this to your shell profile:\n'
+printf '  export PATH="%s/bin:$PATH"\n' "$EZTOOLKIT_ROOT"
