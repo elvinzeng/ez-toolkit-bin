@@ -3,7 +3,7 @@
 #
 # Trust model (two-phase; see design spec §13):
 #   Phase 1: HTTPS + SHA256. The integrity chain is anchored in
-#            meta/bootstrap-index.sh (which carries per-platform package
+#            meta/bootstrap-index.conf (which carries per-platform package
 #            SHA256s) fetched over HTTPS from GitHub.
 #   Phase 2: Once ezcrypt has been extracted from the package, use it to
 #            cryptographically verify the release manifest and every
@@ -79,48 +79,66 @@ case "$(uname -m)" in
     *) printf 'Unsupported architecture: %s\n' "$(uname -m)" >&2; exit 1 ;;
 esac
 
-# 2. Download bootstrap-index.sh (HTTPS trust) and source it with dot.
-#    The index declares PKG_<os>_<arch> and SHA_<os>_<arch> shell variables.
+# 2. Download bootstrap-index.conf (HTTPS trust) and extract data from it.
 #
-#    Note: bootstrap-index.sh is NOT explicitly verified via its .ezg
-#    signature in Phase 2. This is intentional: the signed
-#    release-manifest.toml covers the same per-platform (filename, sha256)
-#    data, so any tampering that replaces bootstrap-index.sh to point at
-#    attacker-controlled bytes is caught transitively when Phase 2
-#    verifies the manifest against ezcrypt_public.pem. ezt's hardcoded
-#    public key on any subsequent run is the ultimate backstop.
-curl -fsSL "$REPO_RAW/meta/bootstrap-index.sh" -o "$BOOTSTRAP_INDEX"
-# shellcheck disable=SC1090  # file is downloaded at runtime; path is not static
-. "$BOOTSTRAP_INDEX"
+#    SECURITY: bootstrap-index.conf is NEVER sourced / executed as shell
+#    code. It is treated as a pure data file: we grep for the exact
+#    variable names we need and extract their values. This prevents an
+#    attacker who compromises the GitHub repo from injecting arbitrary
+#    shell commands — the file can only influence which package filename
+#    and sha256 are used, not what code runs on the user's machine.
+#
+#    The signed release-manifest.toml covers the same (filename, sha256)
+#    data, so any tampering is caught transitively when Phase 2 verifies
+#    the manifest against ezcrypt_public.pem.
+curl -fsSL "$REPO_RAW/meta/bootstrap-index.conf" -o "$BOOTSTRAP_INDEX"
+
+# extract_var: read a variable value from bootstrap-index.conf without
+# executing it. Matches lines of the form: VAR_NAME="value"
+# Returns the unquoted value, or empty string if not found.
+extract_var() {
+    # grep for the exact variable name at line start, extract the quoted value
+    _line=$(grep "^${1}=" "$BOOTSTRAP_INDEX" 2>/dev/null) || true
+    case "$_line" in
+        *=*)
+            # strip everything up to and including the first =
+            _val="${_line#*=}"
+            # strip surrounding quotes (single or double)
+            _val="${_val#\"}" ; _val="${_val%\"}"
+            _val="${_val#\'}" ; _val="${_val%\'}"
+            printf '%s' "$_val"
+            ;;
+    esac
+}
 
 # 3. Resolve package name and SHA for this platform.
-#    Explicit `case` lookup (no `eval`) keeps the trust boundary obvious:
-#    only the platforms listed below reach the download stage. When a new
-#    platform ships, both bootstrap-index.sh AND this case must be updated.
+#    Explicit `case` lookup keeps the trust boundary obvious: only the
+#    platforms listed below reach the download stage. Variable names
+#    match the bootstrap-index.conf format: PKG_<os>_<arch>, SHA_<os>_<arch>.
 case "$OS/$ARCH" in
     linux/amd64)
-        PKG_NAME="$PKG_linux_amd64"
-        PKG_SHA="$SHA_linux_amd64"
+        PKG_NAME=$(extract_var PKG_linux_amd64)
+        PKG_SHA=$(extract_var SHA_linux_amd64)
         ;;
     linux/arm64)
-        PKG_NAME="$PKG_linux_arm64"
-        PKG_SHA="$SHA_linux_arm64"
+        PKG_NAME=$(extract_var PKG_linux_arm64)
+        PKG_SHA=$(extract_var SHA_linux_arm64)
         ;;
     darwin/amd64)
-        PKG_NAME="$PKG_darwin_amd64"
-        PKG_SHA="$SHA_darwin_amd64"
+        PKG_NAME=$(extract_var PKG_darwin_amd64)
+        PKG_SHA=$(extract_var SHA_darwin_amd64)
         ;;
     darwin/arm64)
-        PKG_NAME="$PKG_darwin_arm64"
-        PKG_SHA="$SHA_darwin_arm64"
+        PKG_NAME=$(extract_var PKG_darwin_arm64)
+        PKG_SHA=$(extract_var SHA_darwin_arm64)
         ;;
     windows/amd64)
-        PKG_NAME="$PKG_windows_amd64"
-        PKG_SHA="$SHA_windows_amd64"
+        PKG_NAME=$(extract_var PKG_windows_amd64)
+        PKG_SHA=$(extract_var SHA_windows_amd64)
         ;;
     windows/arm64)
-        PKG_NAME="$PKG_windows_arm64"
-        PKG_SHA="$SHA_windows_arm64"
+        PKG_NAME=$(extract_var PKG_windows_arm64)
+        PKG_SHA=$(extract_var SHA_windows_arm64)
         ;;
     *)
         printf 'Unsupported platform: %s/%s\n' "$OS" "$ARCH" >&2
@@ -163,7 +181,7 @@ fi
 #    $EZTOOLKIT_ROOT/bin). Staging lets Phase 2 verify signatures before
 #    any bytes reach the user's PATH. Because the tar archive is still
 #    cryptographically unauthenticated at this point (its SHA256 is
-#    sourced from bootstrap-index.sh, which itself is not yet verified),
+#    sourced from bootstrap-index.conf, which itself is not yet verified),
 #    we MUST defend against malicious archive contents before running
 #    the extraction that moves them to disk.
 #
@@ -255,8 +273,8 @@ curl -fsSL "$REPO_RAW/meta/release-manifest.toml" \
     -o "$EZTOOLKIT_ROOT/cache/ezt/release-manifest.toml"
 curl -fsSL "$REPO_RAW/meta/release-manifest.toml.ezg" \
     -o "$EZTOOLKIT_ROOT/cache/ezt/release-manifest.toml.ezg"
-curl -fsSL "$REPO_RAW/meta/bootstrap-index.sh.ezg" \
-    -o "$EZTOOLKIT_ROOT/cache/ezt/bootstrap-index.sh.ezg"
+curl -fsSL "$REPO_RAW/meta/bootstrap-index.conf.ezg" \
+    -o "$EZTOOLKIT_ROOT/cache/ezt/bootstrap-index.conf.ezg"
 
 # -----------------------------------------------------------------------------
 # Phase 2: ezcrypt verification (against the staged binaries)
