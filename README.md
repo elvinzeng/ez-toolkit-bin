@@ -25,14 +25,22 @@ this repo only hosts the metadata and signatures needed to bootstrap `ezt`.
 
 ## Installation
 
+First, add the following to your shell profile (`~/.bashrc`, `~/.zshrc`,
+etc.):
+
 ```sh
 export EZTOOLKIT_ROOT="$HOME/.eztoolkit"
-curl -fsSL https://raw.githubusercontent.com/elvinzeng/ez-toolkit-bin/master/install.sh | sh
 export PATH="$EZTOOLKIT_ROOT/bin:$PATH"
 ```
 
-Add the two `export` lines to your shell profile (`~/.bashrc`, `~/.zshrc`,
-etc.) so the binaries stay on your `PATH` between sessions. After bootstrap,
+Then reload your shell (or `source` the profile) and run the bootstrap
+installer:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/elvinzeng/ez-toolkit-bin/master/install.sh | sh
+```
+
+After bootstrap,
 use `ezt install <cmd>`, `ezt upgrade`, and `ezt ls-remote` for day-to-day
 management.
 

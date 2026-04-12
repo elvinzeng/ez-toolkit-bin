@@ -280,7 +280,12 @@ curl -fsSL "$REPO_RAW/meta/bootstrap-index.conf.ezg" \
 # Phase 2: ezcrypt verification (against the staged binaries)
 # -----------------------------------------------------------------------------
 
-EZCRYPT="$STAGE_DIR/ezcrypt"
+# Binary names inside the package carry a platform suffix (e.g.
+# ezcrypt_darwin_arm64). Windows binaries also have .exe.
+case "$OS" in
+    windows) EZCRYPT="$STAGE_DIR/ezcrypt_${OS}_${ARCH}.exe" ;;
+    *)       EZCRYPT="$STAGE_DIR/ezcrypt_${OS}_${ARCH}" ;;
+esac
 PUB="$EZTOOLKIT_ROOT/conf/ezcrypt_public.pem"
 MANIFEST="$EZTOOLKIT_ROOT/cache/ezt/release-manifest.toml"
 MANIFEST_SIG="$EZTOOLKIT_ROOT/cache/ezt/release-manifest.toml.ezg"
@@ -340,12 +345,19 @@ printf 'OK all binary signatures verified\n'
 #     a time (-i <path>), so the move set is exactly the set of files
 #     that cleared signature verification. MANIFEST and other non-binary
 #     filler is left in staging and swept by the cleanup trap.
+SUFFIX="_${OS}_${ARCH}"
+case "$OS" in
+    windows) SUFFIX="_${OS}_${ARCH}.exe" ;;
+esac
 while [ "$#" -gt 0 ]; do
     # "$1" is "-i", "$2" is the staged binary path.
     shift
     src="$1"
     shift
-    name=$(basename "$src")
+    fullname=$(basename "$src")
+    # Strip the platform suffix so users get bare command names on PATH
+    # (e.g. ezcrypt_darwin_arm64 → ezcrypt).
+    name="${fullname%"$SUFFIX"}"
     mv -f "$src" "$EZTOOLKIT_ROOT/bin/$name"
     mv -f "${src}.ezg" "$EZTOOLKIT_ROOT/signatures/${name}.ezg"
 done
