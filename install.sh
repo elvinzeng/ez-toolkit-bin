@@ -25,6 +25,7 @@ GH_API="https://api.github.com/repos/elvinzeng/ez-toolkit-bin"
 
 # Create directories individually (POSIX sh has no brace expansion).
 mkdir -p "$EZTOOLKIT_ROOT/bin"
+mkdir -p "$EZTOOLKIT_ROOT/signatures"
 mkdir -p "$EZTOOLKIT_ROOT/conf"
 mkdir -p "$EZTOOLKIT_ROOT/cache/ezt"
 mkdir -p "$EZTOOLKIT_ROOT/logs/ezt"
@@ -313,16 +314,14 @@ if ! "$EZCRYPT" verify -k "$PUB" "$@" -s "$STAGE_DIR" >/dev/null 2>&1; then
 fi
 printf 'OK all binary signatures verified\n'
 
-# 10. All Phase 2 checks passed — promote ONLY the verified binary + .ezg
-#     pairs to $EZTOOLKIT_ROOT/bin. We iterate the same "$@" we built for
-#     verify, stepping two args at a time (-i <path>), so the move set is
-#     exactly the set of files that cleared signature verification.
+# 10. All Phase 2 checks passed — promote verified files:
+#       binaries  → $EZTOOLKIT_ROOT/bin/        (on PATH, only executables)
+#       .ezg sigs → $EZTOOLKIT_ROOT/signatures/ (off PATH, no tab-complete noise)
 #
-#     Anything else in the stage directory (MANIFEST, future manifest
-#     companions, whatever else a package may carry for offline self-
-#     check) is left behind and swept up by the cleanup trap. Per spec
-#     §11, the in-package MANIFEST file is metadata only; only binaries
-#     and their signatures belong in bin/.
+#     We iterate the same "$@" we built for verify, stepping two args at
+#     a time (-i <path>), so the move set is exactly the set of files
+#     that cleared signature verification. MANIFEST and other non-binary
+#     filler is left in staging and swept by the cleanup trap.
 while [ "$#" -gt 0 ]; do
     # "$1" is "-i", "$2" is the staged binary path.
     shift
@@ -330,7 +329,7 @@ while [ "$#" -gt 0 ]; do
     shift
     name=$(basename "$src")
     mv -f "$src" "$EZTOOLKIT_ROOT/bin/$name"
-    mv -f "${src}.ezg" "$EZTOOLKIT_ROOT/bin/${name}.ezg"
+    mv -f "${src}.ezg" "$EZTOOLKIT_ROOT/signatures/${name}.ezg"
 done
 
 # 11. Cleanup (belt-and-braces: the EXIT trap also handles this path, but
