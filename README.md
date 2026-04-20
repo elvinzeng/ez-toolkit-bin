@@ -1,8 +1,8 @@
 # ez-toolkit-bin
 
-Release artifact repository for Elvin Zeng's **ez-toolkit** CLI toolkit
-(`ezt`, `ezlog`, `ezcrypt`, and friends). This repository hosts the published
-metadata and signatures needed by `install.sh` and `ezt` to discover,
+Release artifacts for **ez-toolkit**, Elvin Zeng's CLI suite
+(`ezt`, `ezlog`, `ezcrypt`, `ezsecret`, `ezsecretd`). This repository hosts the
+published metadata and signatures needed by `install.sh` and `ezt` to discover,
 download, and verify each release.
 
 ## Repository layout
