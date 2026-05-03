@@ -63,9 +63,16 @@ signature and every installed binary's `.ezg` sibling directly — no external
 tool is needed.
 
 **`ezcrypt_public.pem` is the trust root.** It is committed to this
-repository, downloaded during Phase 1, and compared against the copy
-hardcoded inside `ezt` on every subsequent run. Any mismatch causes `ezt` to
-refuse to proceed.
+repository. During Phase 1 the installer downloads it into a staging
+directory for one-shot use — `ezcrypt verify -k <path>` needs a
+filesystem path to validate the staged manifest and binaries. The
+file is removed alongside the rest of the staging directory once
+install completes (success or failure), so nothing persists in
+`$EZTOOLKIT_ROOT`. On every subsequent `ezt` run, the public key
+embedded in the `ezt` binary itself is the trust root: `ezt` always
+re-fetches the published `ezcrypt_public.pem` from this repository
+and compares it against its embedded copy. Any mismatch causes `ezt`
+to refuse to proceed.
 
 If Phase 2 ever warns about a signature failure after a fresh install, treat
 the installation as untrusted. Investigate before running the installed

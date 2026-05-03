@@ -267,8 +267,15 @@ if [ -n "$nonregular" ]; then
 fi
 
 # 7. Download the public key and the signed artifacts used in Phase 2.
+#    The public key lands in $STAGE_DIR (not $EZTOOLKIT_ROOT/conf/) because
+#    it is only needed during this install run — `ezcrypt verify -k` requires
+#    a filesystem path, and after Phase 2 promotes binaries, nothing reads
+#    this pem again. The EXIT trap removes $STAGE_DIR (success or failure)
+#    so the pem does not linger in the user's toolkit root.
+#    (ezt at runtime uses its own //go:embed copy of the pubkey for any
+#    subsequent verify/install/upgrade — see cmd/ezt/keys_production.go.)
 curl -fsSL "$REPO_RAW/ezcrypt_public.pem" \
-    -o "$EZTOOLKIT_ROOT/conf/ezcrypt_public.pem"
+    -o "$STAGE_DIR/ezcrypt_public.pem"
 curl -fsSL "$REPO_RAW/meta/release-manifest.toml" \
     -o "$EZTOOLKIT_ROOT/cache/ezt/release-manifest.toml"
 curl -fsSL "$REPO_RAW/meta/release-manifest.toml.ezg" \
@@ -286,7 +293,7 @@ case "$OS" in
     windows) EZCRYPT="$STAGE_DIR/ezcrypt_${OS}_${ARCH}.exe" ;;
     *)       EZCRYPT="$STAGE_DIR/ezcrypt_${OS}_${ARCH}" ;;
 esac
-PUB="$EZTOOLKIT_ROOT/conf/ezcrypt_public.pem"
+PUB="$STAGE_DIR/ezcrypt_public.pem"
 MANIFEST="$EZTOOLKIT_ROOT/cache/ezt/release-manifest.toml"
 MANIFEST_SIG="$EZTOOLKIT_ROOT/cache/ezt/release-manifest.toml.ezg"
 
