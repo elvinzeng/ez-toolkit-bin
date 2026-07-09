@@ -1,6 +1,6 @@
 schema_version = 1
-release_tag = 'V202605081422'
-release_time = '2026-05-08T14:23:52Z'
+release_tag = 'V202607090951'
+release_time = '2026-07-09T09:53:07Z'
 signing_algo = 'ECC P-521 + ML-KEM-1024 + ML-DSA-87'
 signing_key_fingerprint = 'sha256:7c46053767139534b9067e62668108899a1fcdad69afa400295ab23953a3132e'
 
@@ -13,39 +13,39 @@ platforms = ['darwin/amd64', 'darwin/arm64', 'linux/amd64', 'linux/arm64', 'wind
 [commands.ezcrypt.binaries]
 [commands.ezcrypt.binaries.'darwin/amd64']
 filename = 'ezcrypt_darwin_amd64'
-sha256 = 'b55ad9e8ab7397676fde369cace6a727d04893b2904be4ebd9ac67d3a4d99681'
-size_bytes = 10062880
-build_time = '2026-05-08T14:23:03Z'
+sha256 = '19ce2c7bc93e006308193d4a50eac976150a10ca22604aca6f05db6fe399cfd2'
+size_bytes = 12340208
+build_time = '2026-07-09T09:52:23Z'
 
 [commands.ezcrypt.binaries.'darwin/arm64']
 filename = 'ezcrypt_darwin_arm64'
-sha256 = 'a817969be167feb84f2c5bdb1219486093a138db7c3a2886b99072797758b69c'
-size_bytes = 9200050
-build_time = '2026-05-08T14:23:08Z'
+sha256 = '228f0bc234fc0de959470d8583d19174d5da1fda11eefe5a814e03f626f23258'
+size_bytes = 11338322
+build_time = '2026-07-09T09:52:24Z'
 
 [commands.ezcrypt.binaries.'linux/amd64']
 filename = 'ezcrypt_linux_amd64'
-sha256 = 'f1b3771bf492a255874ddb98bb5ea6a3a8de3c611f4a5fb99db39afcd6a55aa1'
-size_bytes = 9863330
-build_time = '2026-05-08T14:23:12Z'
+sha256 = '536645796afd847763dceefb7d8ef52453f70990a11902808c460b71e790a45b'
+size_bytes = 12058786
+build_time = '2026-07-09T09:52:29Z'
 
 [commands.ezcrypt.binaries.'linux/arm64']
 filename = 'ezcrypt_linux_arm64'
-sha256 = '048fc3075489d14003bb1efc8d841e1e21c39a1acabb626b6a202960478468e3'
-size_bytes = 8978594
-build_time = '2026-05-08T14:23:17Z'
+sha256 = '5ef45edffcb2520b97f9bb65c35b570c970e7960f6354ddda44d9a4d90f28916'
+size_bytes = 11075746
+build_time = '2026-07-09T09:52:34Z'
 
 [commands.ezcrypt.binaries.'windows/amd64']
 filename = 'ezcrypt_windows_amd64.exe'
-sha256 = '1b7296c1078a20d79a6c1e7cad8b748f41c237b2a974303db63d8246472cc5cd'
-size_bytes = 10196992
-build_time = '2026-05-08T14:23:22Z'
+sha256 = '45ff33dbdddf96d8ec43402de75124505b1009457ee81df652f7469ffedd451c'
+size_bytes = 12486144
+build_time = '2026-07-09T09:52:39Z'
 
 [commands.ezcrypt.binaries.'windows/arm64']
 filename = 'ezcrypt_windows_arm64.exe'
-sha256 = '3cf2923752958efd225b49591b6d129d3f2736df626144c6539a968db0c21aa0'
-size_bytes = 9135616
-build_time = '2026-05-08T14:23:27Z'
+sha256 = '7e86fc2f9c8fc1aa286cd5494e2781a1a2198378b7612f6ce62833d9e44d6e1d'
+size_bytes = 11233280
+build_time = '2026-07-09T09:52:44Z'
 
 [commands.ezlog]
 version = '1.1.2'
@@ -55,87 +55,87 @@ platforms = ['darwin/amd64', 'darwin/arm64', 'linux/amd64', 'linux/arm64', 'wind
 [commands.ezlog.binaries]
 [commands.ezlog.binaries.'darwin/amd64']
 filename = 'ezlog_darwin_amd64'
-sha256 = 'cde3f4ca16d9bf112009028c5eae571ba82c1be274d72fca49af9c9022795e1b'
-size_bytes = 8853936
-build_time = '2026-05-08T14:23:28Z'
+sha256 = '11de060a84223185cbe6e8da49088e73a9e90802b18622206981aabb464f1380'
+size_bytes = 11159824
+build_time = '2026-07-09T09:52:45Z'
 
 [commands.ezlog.binaries.'darwin/arm64']
 filename = 'ezlog_darwin_arm64'
-sha256 = '15c20ec61f5f200e358c07ebf7526f912d891159830d684ce8abafd30fb547fa'
-size_bytes = 8196194
-build_time = '2026-05-08T14:23:29Z'
+sha256 = 'c4aa5f2f816a5d056cb05b4bfb4c87df799f95713c8cb4487f8f41a0f2f414ad'
+size_bytes = 10367394
+build_time = '2026-07-09T09:52:46Z'
 
 [commands.ezlog.binaries.'linux/amd64']
 filename = 'ezlog_linux_amd64'
-sha256 = 'e4445811c2f443a7fa883e6fa8e9c0b5d9d6f8b1821755820714dc112884319a'
-size_bytes = 8675490
-build_time = '2026-05-08T14:23:30Z'
+sha256 = '77742f06b2ff0e37d370a6c32918ce085bdecfee4722a51da5258d74d5bdabff'
+size_bytes = 10895522
+build_time = '2026-07-09T09:52:47Z'
 
 [commands.ezlog.binaries.'linux/arm64']
 filename = 'ezlog_linux_arm64'
-sha256 = 'b31d8b58e837ecf930eb1599837435aece0553e9bb7db87e35d8c0c3aa7ea019'
-size_bytes = 7995554
-build_time = '2026-05-08T14:23:31Z'
+sha256 = '29f59888b668c328d564a8845b3cec1e3b012e06152b0946b74a27531d8df255'
+size_bytes = 10158242
+build_time = '2026-07-09T09:52:48Z'
 
 [commands.ezlog.binaries.'windows/amd64']
 filename = 'ezlog_windows_amd64.exe'
-sha256 = '69e3378c87ab28aecbc3bba3e414018581350bb2720a3f7d5d484866c05a68b8'
-size_bytes = 9025536
-build_time = '2026-05-08T14:23:32Z'
+sha256 = 'a4885039f911f94723aa473521146862f22b29191005fd6fe3beb0889f9aab84'
+size_bytes = 11305472
+build_time = '2026-07-09T09:52:49Z'
 
 [commands.ezlog.binaries.'windows/arm64']
 filename = 'ezlog_windows_arm64.exe'
-sha256 = '6e16e926c79842948a4b46832c0bf185f71df390fab71fe7c8579f50ca2087d4'
-size_bytes = 8206336
-build_time = '2026-05-08T14:23:33Z'
+sha256 = '0ddc9e45264ed88e7e6283eaf8fc4f9aeb1b9222c639fe0945603572f506d656'
+size_bytes = 10292224
+build_time = '2026-07-09T09:52:50Z'
 
 [commands.ezsecret]
-version = '0.2.1'
+version = '0.3.0'
 description = 'ezsecret is the operator-facing side of the ezsecret toolkit.'
 platforms = ['darwin/arm64', 'linux/amd64', 'linux/arm64']
 
 [commands.ezsecret.binaries]
 [commands.ezsecret.binaries.'darwin/arm64']
 filename = 'ezsecret_darwin_arm64'
-sha256 = '6002f24ce8c703c927ef4ff3640c6ab26f878a3360643870a30cfd8c1d5dfe49'
-size_bytes = 15265042
-build_time = '2026-05-08T14:23:36Z'
+sha256 = '17dbf214c73a443a03955bfc615287e3e68045da7bd9482b094c654e2a06c461'
+size_bytes = 15248482
+build_time = '2026-07-09T09:52:51Z'
 
 [commands.ezsecret.binaries.'linux/amd64']
 filename = 'ezsecret_linux_amd64'
-sha256 = '1c24d735dc5aef3380f5caf9c867e7257b005bbe53d65112ea7e32ef78fdb2ec'
-size_bytes = 15970466
-build_time = '2026-05-08T14:23:38Z'
+sha256 = '47713a1d436e1b5158e8d75a6bc460cf0f803507215f5b7aebf0b1c489bd3730'
+size_bytes = 15954082
+build_time = '2026-07-09T09:52:54Z'
 
 [commands.ezsecret.binaries.'linux/arm64']
 filename = 'ezsecret_linux_arm64'
-sha256 = '49f588ed9e0f455fb36b97d6743ab54f500f846f311e587139c1d24729373f81'
+sha256 = '119285022f98461e970af1389595ecc11218fe0151f1f22d3833d4edc6e2098b'
 size_bytes = 14745762
-build_time = '2026-05-08T14:23:41Z'
+build_time = '2026-07-09T09:52:56Z'
 
 [commands.ezsecretd]
-version = '0.2.1'
+version = '0.3.0'
 description = 'ezsecretd is the long-lived component of the ezsecret toolkit.'
 platforms = ['darwin/arm64', 'linux/amd64', 'linux/arm64']
 
 [commands.ezsecretd.binaries]
 [commands.ezsecretd.binaries.'darwin/arm64']
 filename = 'ezsecretd_darwin_arm64'
-sha256 = '487127ab4c7d49c82b8443232935ac2d1041b11d5745de87a03d718d9b2f0b17'
-size_bytes = 13997346
-build_time = '2026-05-08T14:23:42Z'
+sha256 = '66d98b5fec39be11c0b12f4adcb8e39aba08026b58819d3c55ffd16102855389'
+size_bytes = 13997602
+build_time = '2026-07-09T09:52:57Z'
 
 [commands.ezsecretd.binaries.'linux/amd64']
 filename = 'ezsecretd_linux_amd64'
-sha256 = '31dd833ebca6da6cd397b00ac2da5f16f4375c3d1905e91c7a0c126851cc2754'
-size_bytes = 14606498
-build_time = '2026-05-08T14:23:43Z'
+sha256 = 'a7ee6547a2ec296b7176c4d80e23ec8495756082046bb6d8e1719df042ec87ec'
+size_bytes = 14610594
+build_time = '2026-07-09T09:52:58Z'
 
 [commands.ezsecretd.binaries.'linux/arm64']
 filename = 'ezsecretd_linux_arm64'
-sha256 = '93ef31a4e50711eba38ec1259e707ae17613769d89b3e9d3d3910b7cba500bdc'
+sha256 = 'f794f4da5153cdabea3914a72fe7db68b6314a980c2f5a3d92455f98fff8b9f0'
 size_bytes = 13566114
-build_time = '2026-05-08T14:23:44Z'
+build_time = '2026-07-09T09:52:59Z'
 
 [commands.ezt]
 version = '2.0.10'
@@ -145,79 +145,79 @@ platforms = ['darwin/amd64', 'darwin/arm64', 'linux/amd64', 'linux/arm64', 'wind
 [commands.ezt.binaries]
 [commands.ezt.binaries.'darwin/amd64']
 filename = 'ezt_darwin_amd64'
-sha256 = '9df942587bb6e63dbb9c6e0a8b5898b05952290bf269bc51914c618da59cda27'
-size_bytes = 10136832
-build_time = '2026-05-08T14:23:45Z'
+sha256 = 'ef82fdd6dfb3a96249d6db2e11d6636e67036627f837bb0b08aceb4b1b91b3d9'
+size_bytes = 13491376
+build_time = '2026-07-09T09:53:00Z'
 
 [commands.ezt.binaries.'darwin/arm64']
 filename = 'ezt_darwin_arm64'
-sha256 = 'c1e4e872440de8fb9ba45fae432c0dab80f521d55b71b4177344c45623eb5d28'
-size_bytes = 9311762
-build_time = '2026-05-08T14:23:46Z'
+sha256 = '72aaff45907e9f8ded158be1ee26fc1919986ae3a2e15d39cb6bea81cc0c4d1c'
+size_bytes = 12424194
+build_time = '2026-07-09T09:53:01Z'
 
 [commands.ezt.binaries.'linux/amd64']
 filename = 'ezt_linux_amd64'
-sha256 = '8c620179b239d8c751636a74e07cddc5dd55cd78553fb37a3eb961b94840a528'
-size_bytes = 9924770
-build_time = '2026-05-08T14:23:47Z'
+sha256 = 'bb09b8c23b32f5fcf2811edc3eb1a0364bbb809122b1231812e7bb17efcf921e'
+size_bytes = 13209762
+build_time = '2026-07-09T09:53:02Z'
 
 [commands.ezt.binaries.'linux/arm64']
 filename = 'ezt_linux_arm64'
-sha256 = 'a18ecd357adaabe3d62c388fe5de058a7fa0876453f41874aa24872d664a82ba'
-size_bytes = 9044130
-build_time = '2026-05-08T14:23:47Z'
+sha256 = '2ea87e965c82cbc3f5bb9d2e4c1bf20443e2812e14e6aa10a4107588cb948869'
+size_bytes = 12124322
+build_time = '2026-07-09T09:53:02Z'
 
 [commands.ezt.binaries.'windows/amd64']
 filename = 'ezt_windows_amd64.exe'
-sha256 = '5eb097c4832d2d0d3c102fcfa7537e7048043eb09c4716b9823c4a29a32671d6'
-size_bytes = 10372608
-build_time = '2026-05-08T14:23:49Z'
+sha256 = '7dcf97278caae9ea917043380b34b21a64b7ae39c560a3fd1758ec5e4020526e'
+size_bytes = 13710848
+build_time = '2026-07-09T09:53:04Z'
 
 [commands.ezt.binaries.'windows/arm64']
 filename = 'ezt_windows_arm64.exe'
-sha256 = '3e52f00138707557891862af13f55a8f0beb6daa8f9923112c64844e7ce51d88'
-size_bytes = 9349120
-build_time = '2026-05-08T14:23:50Z'
+sha256 = 'ef52c18033ae02b08f187f48ae6256e433bb27d17cd7d794a21927261201eb3a'
+size_bytes = 12365824
+build_time = '2026-07-09T09:53:05Z'
 
 [packages]
 [packages.'darwin/amd64']
-filename = 'ez-toolkit-darwin-amd64-package-20260508142352.tar.xz'
-sha256 = '27ee7f18692c7920294fe1e4f041b7bb4520a57661b4b81313e6314df6ce6f64'
-size_bytes = 4869868
-pack_time = '2026-05-08T14:23:52Z'
+filename = 'ez-toolkit-darwin-amd64-package-20260709095307.tar.xz'
+sha256 = '715fae5f06286ef418c192cd0f44dc7dd5a8e26e7b631bac48cec66a0aef2867'
+size_bytes = 6031036
+pack_time = '2026-07-09T09:53:07Z'
 includes = ['ezcrypt', 'ezlog', 'ezt']
 
 [packages.'darwin/arm64']
-filename = 'ez-toolkit-darwin-arm64-package-20260508142352.tar.xz'
-sha256 = '1cbacf09aa3999bf52d5035659cfcb61b1e073d22d34bf828ce726577e3a0df3'
-size_bytes = 8342140
-pack_time = '2026-05-08T14:23:52Z'
+filename = 'ez-toolkit-darwin-arm64-package-20260709095307.tar.xz'
+sha256 = '0084d6fc84e3fbb849ec605ab312f5484332a52345b9ec4f5e359cc053cfbd67'
+size_bytes = 8961324
+pack_time = '2026-07-09T09:53:07Z'
 includes = ['ezcrypt', 'ezlog', 'ezsecret', 'ezsecretd', 'ezt']
 
 [packages.'linux/amd64']
-filename = 'ez-toolkit-linux-amd64-package-20260508142352.tar.xz'
-sha256 = '30c8eed447bcb9c39734f9b8f49bfe963eb536e1c6859da97e003bae31d6e798'
-size_bytes = 8606300
-pack_time = '2026-05-08T14:23:52Z'
+filename = 'ez-toolkit-linux-amd64-package-20260709095307.tar.xz'
+sha256 = '105a13619e773c507f013ad591393a85a22c27b4b382d3c89dd79e7e32af9d69'
+size_bytes = 9213984
+pack_time = '2026-07-09T09:53:07Z'
 includes = ['ezcrypt', 'ezlog', 'ezsecret', 'ezsecretd', 'ezt']
 
 [packages.'linux/arm64']
-filename = 'ez-toolkit-linux-arm64-package-20260508142352.tar.xz'
-sha256 = '238b5a52fcd9a939079d49b5c95faf0741161d76be28756d9751b8749d967590'
-size_bytes = 7601980
-pack_time = '2026-05-08T14:23:52Z'
+filename = 'ez-toolkit-linux-arm64-package-20260709095307.tar.xz'
+sha256 = 'd4ccb84b44082fa3fc50223ece290ab1bf2ba8c5c9fd0e4c654fd6380d12384e'
+size_bytes = 8127480
+pack_time = '2026-07-09T09:53:07Z'
 includes = ['ezcrypt', 'ezlog', 'ezsecret', 'ezsecretd', 'ezt']
 
 [packages.'windows/amd64']
-filename = 'ez-toolkit-windows-amd64-package-20260508142352.tar.xz'
-sha256 = '3afedbdc79064ca55da1449179d70e2ebb2cadb8b9f6b593e52d18538113225a'
-size_bytes = 4954900
-pack_time = '2026-05-08T14:23:52Z'
+filename = 'ez-toolkit-windows-amd64-package-20260709095307.tar.xz'
+sha256 = '34ac7425bbdeaa6a39feb482c33e6e20b56c125841c92d0be7182bcabf8bf425'
+size_bytes = 6132484
+pack_time = '2026-07-09T09:53:07Z'
 includes = ['ezcrypt', 'ezlog', 'ezt']
 
 [packages.'windows/arm64']
-filename = 'ez-toolkit-windows-arm64-package-20260508142352.tar.xz'
-sha256 = '796604cb3abeb17a287372acc6b5ecc452f87563b232b2a5736013aecf38c0d5'
-size_bytes = 4239800
-pack_time = '2026-05-08T14:23:52Z'
+filename = 'ez-toolkit-windows-arm64-package-20260709095307.tar.xz'
+sha256 = '48f6c95174ff7a11319cf7774c19627ed74b48036a54aec3b85776e0419ae7d2'
+size_bytes = 5241036
+pack_time = '2026-07-09T09:53:07Z'
 includes = ['ezcrypt', 'ezlog', 'ezt']
