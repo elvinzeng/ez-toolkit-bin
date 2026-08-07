@@ -19,7 +19,52 @@
 #   - `command -v` not `which`
 set -e
 
+# -----------------------------------------------------------------------------
+# Phase 0: dependency preflight
+# -----------------------------------------------------------------------------
+# Every command this script relies on is checked up front, so a missing
+# dependency is reported as a missing dependency. Without this, the failure
+# surfaces several steps later wearing the wrong name — a machine without
+# `xz` used to abort with "Failed to list archive contents", which reads
+# like a corrupt download.
+missing=""
+for cmd in curl tar mktemp find basename grep cut tr uname; do
+    command -v "$cmd" >/dev/null 2>&1 || missing="$missing $cmd"
+done
+
+# sha256: GNU coreutils ships sha256sum, BSD/macOS ships shasum. Either
+# satisfies step 5, so this is an or-check rather than part of the loop.
+if ! command -v sha256sum >/dev/null 2>&1 && ! command -v shasum >/dev/null 2>&1; then
+    missing="$missing sha256sum(or-shasum)"
+fi
+
+# xz: the release packages are .tar.xz and step 6 unpacks them with `tar -J`.
+# GNU tar implements -J by forking the external `xz` binary, so on Linux the
+# xz-utils package is a hard requirement. BSD tar (macOS, and anything else
+# built on libarchive) links liblzma directly and needs no external binary —
+# which is why this gap never showed up on macOS. Probe accordingly instead
+# of demanding xz everywhere.
+if ! command -v xz >/dev/null 2>&1; then
+    case "$(tar --version 2>/dev/null)" in
+        *bsdtar*|*libarchive*) ;;
+        *) missing="$missing xz" ;;
+    esac
+fi
+
+if [ -n "$missing" ]; then
+    printf 'Missing required command(s):%s\n' "$missing" >&2
+    printf '  Install them and re-run. On Debian/Ubuntu, the packages are\n' >&2
+    printf '  usually named after the commands (xz lives in xz-utils).\n' >&2
+    exit 1
+fi
+
+# EZTOOLKIT_ROOT must be EXPORTED, not merely set: the ezcrypt invoked in
+# Phase 2 is a child process, and every ezcli binary refuses to run without
+# this variable in its environment. A bare assignment leaves it invisible to
+# children, so on a machine where the user's profile has not already exported
+# it, ezcrypt exits before doing any crypto at all.
 EZTOOLKIT_ROOT="${EZTOOLKIT_ROOT:-$HOME/.eztoolkit}"
+export EZTOOLKIT_ROOT
 REPO_RAW="https://raw.githubusercontent.com/elvinzeng/ez-toolkit-bin/master"
 GH_API="https://api.github.com/repos/elvinzeng/ez-toolkit-bin"
 
@@ -29,6 +74,20 @@ mkdir -p "$EZTOOLKIT_ROOT/signatures"
 mkdir -p "$EZTOOLKIT_ROOT/conf"
 mkdir -p "$EZTOOLKIT_ROOT/cache/ezt"
 mkdir -p "$EZTOOLKIT_ROOT/logs/ezt"
+
+# ezcli binaries also refuse to run unless $EZTOOLKIT_ROOT/bin is on PATH
+# (see ezcli internal/cmdbase/prerun.go). That check exists to keep users
+# from installing commands they cannot then invoke, but it applies to every
+# ezcli binary including the ezcrypt this script drives during bootstrap —
+# and during bootstrap the profile edit printed at the end has not happened
+# yet. Prepend it for the duration of this run so Phase 2 can proceed.
+# The staged ezcrypt is still invoked by absolute path, so this affects the
+# preflight check only, never which binary runs.
+case ":$PATH:" in
+    *":$EZTOOLKIT_ROOT/bin:"*) ;;
+    *) PATH="$EZTOOLKIT_ROOT/bin:$PATH" ;;
+esac
+export PATH
 
 # All temp state is created via mktemp for two reasons:
 #   1. `$$` makes filenames predictable (PID), which opens a /tmp symlink
@@ -45,11 +104,13 @@ export TMPDIR
 BOOTSTRAP_INDEX=""
 PKG_TMP=""
 STAGE_DIR=""
+VERIFY_LOG=""
 
 cleanup() {
     [ -n "$BOOTSTRAP_INDEX" ] && rm -f "$BOOTSTRAP_INDEX"
     [ -n "$PKG_TMP" ] && rm -f "$PKG_TMP"
     [ -n "$STAGE_DIR" ] && rm -rf "$STAGE_DIR"
+    [ -n "$VERIFY_LOG" ] && rm -f "$VERIFY_LOG"
     return 0
 }
 trap cleanup EXIT INT TERM
@@ -64,6 +125,13 @@ PKG_TMP=$(mktemp -t ez-toolkit-pkg.XXXXXXXXXX) || {
 }
 STAGE_DIR=$(mktemp -d -t ez-toolkit-stage.XXXXXXXXXX) || {
     printf 'Failed to create staging directory\n' >&2
+    exit 1
+}
+# Phase 2 captures ezcrypt's output here so it can be replayed verbatim on
+# failure. It lives outside $STAGE_DIR so the step-9 glob over the staged
+# package never sees it.
+VERIFY_LOG=$(mktemp -t ez-toolkit-verify.XXXXXXXXXX) || {
+    printf 'Failed to create temp file for verification output\n' >&2
     exit 1
 }
 
@@ -200,6 +268,7 @@ fi
 #    tar -J (xz) is not in POSIX tar but is supported by GNU tar, BSD tar,
 #    and busybox tar when compiled with xz. Falling back to a two-step
 #    `xz -d` + `tar -xf` would complicate error handling, so we require it.
+#    Phase 0 verifies that requirement is actually met before we get here.
 
 # Pre-check 1: entry types. Use long-form `tar -tv` and reject any entry
 # whose first column (the type char) is not `-` (regular file) or `d`
@@ -211,6 +280,9 @@ fi
 # and busybox tar at the first-column level.
 tar_long=$(tar -tvJf "$PKG_TMP") || {
     printf 'Failed to list archive contents (long form)\n' >&2
+    printf '  If tar reported that it could not exec xz, this tar needs the\n' >&2
+    printf '  external xz binary for -J. Phase 0 should have caught that;\n' >&2
+    printf '  otherwise the downloaded package is corrupt.\n' >&2
     exit 1
 }
 printf '%s\n' "$tar_long" | while IFS= read -r line; do
@@ -304,10 +376,23 @@ if [ ! -x "$EZCRYPT" ]; then
 fi
 
 # 8. Verify the release manifest signature.
-if ! "$EZCRYPT" verify -k "$PUB" -i "$MANIFEST" -s "$MANIFEST_SIG" >/dev/null 2>&1; then
-    printf 'WARNING: manifest signature verification FAILED\n' >&2
+#
+#    Output is captured rather than discarded, and replayed verbatim when
+#    ezcrypt exits non-zero. A non-zero exit does NOT prove the signature is
+#    bad — ezcrypt also refuses to start when its own environment precondi-
+#    tions are unmet, and those exits are indistinguishable from a real
+#    verification failure by exit code alone. Discarding stderr here once
+#    turned "EZTOOLKIT_ROOT is not set" into a reported signature failure and
+#    sent the investigation after a key-rotation theory for a day. Never
+#    reintroduce `2>&1` on this call: the abort message states what is
+#    certain (the check did not pass), and ezcrypt's own words supply why.
+if ! "$EZCRYPT" verify -k "$PUB" -i "$MANIFEST" -s "$MANIFEST_SIG" >"$VERIFY_LOG" 2>&1; then
+    printf 'WARNING: manifest signature check did not pass\n' >&2
+    printf '  ezcrypt exited non-zero. Its output was:\n' >&2
+    sed 's/^/    | /' "$VERIFY_LOG" >&2
+    printf '  This is either a genuine signature failure or an ezcrypt startup\n' >&2
+    printf '  error — the message above distinguishes them.\n' >&2
     printf '  Bootstrap aborted: integrity could not be cryptographically verified.\n' >&2
-    printf '  Investigate before retrying.\n' >&2
     exit 2
 fi
 printf 'OK manifest signature verified\n'
@@ -337,8 +422,12 @@ if [ "$#" -eq 0 ]; then
     exit 3
 fi
 
-if ! "$EZCRYPT" verify -k "$PUB" "$@" -s "$STAGE_DIR" >/dev/null 2>&1; then
-    printf 'WARNING: one or more binary signatures FAILED\n' >&2
+#    As in step 8, ezcrypt's output is captured and replayed on failure
+#    rather than discarded — see the reasoning there.
+if ! "$EZCRYPT" verify -k "$PUB" "$@" -s "$STAGE_DIR" >"$VERIFY_LOG" 2>&1; then
+    printf 'WARNING: binary signature check did not pass\n' >&2
+    printf '  ezcrypt exited non-zero. Its output was:\n' >&2
+    sed 's/^/    | /' "$VERIFY_LOG" >&2
     printf '  Bootstrap aborted: the staged binaries were NOT installed.\n' >&2
     exit 3
 fi
@@ -378,4 +467,8 @@ STAGE_DIR=""
 
 printf '\n'
 printf 'Bootstrap complete. Add this to your shell profile:\n'
+# The $PATH below is deliberately literal — this line is advice text the user
+# copies into a shell profile, where $PATH must be expanded at that time, not
+# now. Expanding it here would paste the installing machine's entire PATH.
+# shellcheck disable=SC2016
 printf '  export PATH="%s/bin:$PATH"\n' "$EZTOOLKIT_ROOT"
