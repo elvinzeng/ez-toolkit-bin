@@ -78,6 +78,42 @@ If Phase 2 ever warns about a signature failure after a fresh install, treat
 the installation as untrusted. Investigate before running the installed
 binaries — see `ezt verify-install` for a per-file breakdown.
 
+## Verifying the trust root yourself
+
+`ezt` compares the published `ezcrypt_public.pem` against the copy embedded in
+its own binary and refuses to proceed on any mismatch. You do not have to take
+its word for it — the comparison is over a **fingerprint of the key material**,
+and you can compute the same value two independent ways:
+
+```sh
+# With the toolkit
+ezcrypt inspect -i ezcrypt_public.pem      # prints: Fingerprint: ezpubkey-sha256:<hex>
+
+# Without trusting any ez-toolkit binary
+python3 -c 'import base64,hashlib,re,sys
+d = open(sys.argv[1], "rb").read().decode().replace("\r\n", "\n")
+bs = set()
+for m in re.finditer(r"^-----BEGIN ([^\n]+?)-----\n(.*?)^-----END \1-----", d, re.S | re.M):
+    lines = m.group(2).split("\n")
+    while lines and ":" in lines[0]: lines.pop(0)
+    p = base64.b64decode(re.sub(r"\s", "", "\n".join(lines)), validate=True)
+    if not p: sys.exit("empty PEM block payload")
+    bs.add(p)
+if not bs: sys.exit("no PEM block found")
+h = hashlib.sha256()
+for b in sorted(bs):
+    h.update(len(b).to_bytes(4, "big") + b)
+print("ezpubkey-sha256:" + h.hexdigest())' ezcrypt_public.pem
+```
+
+Both print the same value. The fingerprint identifies the **key**, not the file
+that carries it: re-wrapping the base64 at a different width, LF versus CRLF,
+blank lines, PEM headers and the armour name all leave it unchanged. A mismatch
+is therefore a real difference in key material, not a formatting artifact.
+
+`openssl` cannot compute this one: the signing key is a multi-block
+post-quantum hybrid key, which openssl does not parse.
+
 ## Key rotation
 
 If the signing key is ever rotated, a new `ezcrypt_public.pem` will be
